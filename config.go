@@ -14,6 +14,10 @@ import (
 // Each field's zero-value is either meaningful or interpreted as using the
 // default value defined by the library.
 type Config struct {
+	// BatchMaxSize contains the maximum size in byte that will be sent per
+	// batch request.
+	BatchMaxSize uint
+
 	// GzipCompressionLevel sets the GZip compression level. If set to 0,
 	// compression is disabled.
 	GzipCompressionLevel int
@@ -158,6 +162,10 @@ func makeConfig(c Config) Config {
 
 	if c.maxConcurrentRequests == 0 {
 		c.maxConcurrentRequests = 1000
+	}
+
+	if c.BatchMaxSize == 0 {
+		c.BatchMaxSize = maxBatchBytes
 	}
 
 	// We always overwrite the 'library' field of the default context set on the

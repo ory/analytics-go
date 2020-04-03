@@ -436,7 +436,7 @@ func (c *client) maxBatchBytes() int {
 		SentAt:    c.now(),
 		Context:   c.DefaultContext,
 	})
-	return maxBatchBytes - len(b)
+	return int(c.BatchMaxSize) - len(b)
 }
 
 func (c *client) notifySuccess(msgs []message) {
