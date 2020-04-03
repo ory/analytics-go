@@ -1,14 +1,14 @@
 package analytics
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"sync"
-
-	"bytes"
-	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -247,21 +247,42 @@ func (c *client) sendAsync(msgs []message, wg *sync.WaitGroup, ex *executor) {
 func (c *client) send(msgs []message) {
 	const attempts = 10
 
-	b, err := json.Marshal(batch{
+	b := batch{
 		MessageId: c.uid(),
 		SentAt:    c.now(),
 		Messages:  msgs,
 		Context:   c.DefaultContext,
-	})
+	}
 
-	if err != nil {
-		c.errorf("marshalling messages - %s", err)
-		c.notifyFailure(msgs, err)
-		return
+	var buf bytes.Buffer
+	var err error
+	if c.GzipCompressionLevel > 0 {
+		writer, err := gzip.NewWriterLevel(&buf, c.GzipCompressionLevel)
+		if err != nil {
+			c.errorf("preparing gzip - %s", err)
+			c.notifyFailure(msgs, err)
+			return
+		}
+		if err := json.NewEncoder(writer).Encode(b); err != nil {
+			c.errorf("marshalling messages - %s", err)
+			c.notifyFailure(msgs, err)
+			return
+		}
+		if err := writer.Close(); err != nil {
+			c.errorf("closing gzip - %s", err)
+			c.notifyFailure(msgs, err)
+			return
+		}
+	} else {
+		if err = json.NewEncoder(&buf).Encode(b); err != nil {
+			c.errorf("marshalling messages - %s", err)
+			c.notifyFailure(msgs, err)
+			return
+		}
 	}
 
 	for i := 0; i != attempts; i++ {
-		if err = c.upload(b); err == nil {
+		if err = c.upload(buf.Bytes()); err == nil {
 			c.notifySuccess(msgs)
 			return
 		}
@@ -283,14 +304,18 @@ func (c *client) send(msgs []message) {
 // Upload serialized batch message.
 func (c *client) upload(b []byte) error {
 	url := c.Endpoint + "/v1/batch"
-	req, err := http.NewRequest("POST", url, bytes.NewReader(b))
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	if err != nil {
 		c.errorf("creating request - %s", err)
 		return err
 	}
 
+	if c.GzipCompressionLevel > 0 {
+		req.Header.Add("Content-Encoding", "gzip")
+	}
 	req.Header.Add("User-Agent", "analytics-go (version: "+Version+")")
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json; charset=UTF-8")
 	req.Header.Add("Content-Length", string(len(b)))
 	req.SetBasicAuth(c.key, "")
 

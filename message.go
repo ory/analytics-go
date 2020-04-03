@@ -113,7 +113,7 @@ func (q *messageQueue) push(m message) (b []message) {
 	q.pending = append(q.pending, m)
 	q.bytes += len(m.json)
 
-	if b == nil && len(q.pending) == q.maxBatchSize {
+	if b == nil && len(q.pending) >= q.maxBatchSize {
 		b = q.flush()
 	}
 
@@ -126,6 +126,7 @@ func (q *messageQueue) flush() (msgs []message) {
 }
 
 const (
-	maxBatchBytes   = 500000
-	maxMessageBytes = 32000
+	// these are byte-based values (no power of 2 needed)
+	maxBatchBytes = 50 * 1000 * 1000
+	maxMessageBytes = 32 * 1000
 )

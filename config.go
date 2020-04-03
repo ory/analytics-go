@@ -14,6 +14,9 @@ import (
 // Each field's zero-value is either meaningful or interpreted as using the
 // default value defined by the library.
 type Config struct {
+	// GzipCompressionLevel sets the GZip compression level. If set to 0,
+	// compression is disabled.
+	GzipCompressionLevel int
 
 	// The endpoint to which the client connect and send their messages, set to
 	// `DefaultEndpoint` by default.
@@ -86,11 +89,11 @@ const DefaultEndpoint = "https://api.segment.io"
 
 // This constant sets the default flush interval used by client instances if
 // none was explicitly set.
-const DefaultInterval = 5 * time.Second
+const DefaultInterval = 10 * time.Minute
 
 // This constant sets the default batch size used by client instances if none
 // was explicitly set.
-const DefaultBatchSize = 250
+const DefaultBatchSize = 10000
 
 // Verifies that fields that don't have zero-values are set to valid values,
 // returns an error describing the problem if a field was invalid.
