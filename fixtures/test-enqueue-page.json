@@ -1,19 +1,12 @@
 {
-  "batch": [
-    {
-      "messageId": "I'm unique",
-      "name": "A",
-      "timestamp": "2009-11-10T23:00:00Z",
-      "type": "page",
-      "userId": "B"
-    }
-  ],
-  "context": {
-    "library": {
-      "name": "analytics-go",
-      "version": "3.0.0"
-    }
-  },
-  "messageId": "I'm unique",
-  "sentAt": "2009-11-10T23:00:00Z"
+  "t": 3,
+  "v": 1,
+  "ts": "2023-04-24T10:30:38.684249357+03:00",
+  "mid": "dcf19b54-bc71-4e4a-8f7c-81aa2db87425",
+  "iid": "A",
+  "did": "B",
+  "uh": "kratos.example.com",
+  "up": "/sessions/whoami",
+  "rc": 401,
+  "rl": 0
 }

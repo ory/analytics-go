@@ -19,13 +19,13 @@ func TestMessageIdNonDefault(t *testing.T) {
 
 func TestMessageQueuePushMaxBatchSize(t *testing.T) {
 	m0, _ := makeMessage(Track{
-		UserId: "1",
-		Event:  "A",
+		InstanceId:   "A",
+		DeploymentId: "B",
 	}, maxMessageBytes)
 
 	m1, _ := makeMessage(Track{
-		UserId: "2",
-		Event:  "A",
+		InstanceId:   "A",
+		DeploymentId: "B",
 	}, maxMessageBytes)
 
 	q := messageQueue{
@@ -44,13 +44,13 @@ func TestMessageQueuePushMaxBatchSize(t *testing.T) {
 
 func TestMessageQueuePushMaxBatchBytes(t *testing.T) {
 	m0, _ := makeMessage(Track{
-		UserId: "1",
-		Event:  "A",
+		InstanceId:   "A",
+		DeploymentId: "B",
 	}, maxMessageBytes)
 
 	m1, _ := makeMessage(Track{
-		UserId: "2",
-		Event:  "A",
+		InstanceId:   "A",
+		DeploymentId: "B",
 	}, maxMessageBytes)
 
 	q := messageQueue{
@@ -72,7 +72,10 @@ func TestMessageQueuePushMaxBatchBytes(t *testing.T) {
 }
 
 func TestMakeMessage(t *testing.T) {
-	track := Track{UserId: "1"}
+	track := Track{
+		InstanceId:   "A",
+		DeploymentId: "B",
+	}
 
 	if msg, err := makeMessage(track, maxMessageBytes); err != nil {
 		t.Error("failed to make message from track message:", err)
@@ -86,7 +89,7 @@ func TestMakeMessage(t *testing.T) {
 }
 
 func TestMakeMessageTooBig(t *testing.T) {
-	if _, err := makeMessage(Track{UserId: "1"}, 1); err != ErrMessageTooBig {
+	if _, err := makeMessage(Track{InstanceId: "A", DeploymentId: "B"}, 1); err != ErrMessageTooBig {
 		t.Error("invalid error returned when creating a message bigger than the limit:", err)
 	}
 }

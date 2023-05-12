@@ -2,7 +2,19 @@ package analytics
 
 import "testing"
 
-func TestPageMissingUserId(t *testing.T) {
+func TestPageValid(t *testing.T) {
+	page := Page{
+		Type:         3,
+		DeploymentId: "TEST",
+		InstanceId:   "TEST",
+	}
+
+	if err := page.Validate(); err == nil {
+		t.Error("validating a valid page object failed:", page, err)
+	}
+}
+
+func TestPageInvalidType(t *testing.T) {
 	page := Page{}
 
 	if err := page.Validate(); err == nil {
@@ -13,29 +25,51 @@ func TestPageMissingUserId(t *testing.T) {
 
 	} else if e != (FieldError{
 		Type:  "analytics.Page",
-		Name:  "UserId",
+		Name:  "Type",
+		Value: 0,
+	}) {
+		t.Error("invalid error value returned when validating page:", err)
+	}
+}
+
+func TestPageMissingInstanceId(t *testing.T) {
+	page := Page{
+		Type:         3,
+		DeploymentId: "TEST",
+	}
+
+	if err := page.Validate(); err != nil {
+		t.Error("validating an invalid page object succeeded:", page)
+
+	} else if e, ok := err.(FieldError); !ok {
+		t.Error("invalid error type returned when validating page:", err)
+
+	} else if e != (FieldError{
+		Type:  "analytics.Page",
+		Name:  "InstanceId",
 		Value: "",
 	}) {
 		t.Error("invalid error value returned when validating page:", err)
 	}
 }
 
-func TestPageValidWithUserId(t *testing.T) {
+func TestPageMissingDeploymentId(t *testing.T) {
 	page := Page{
-		UserId: "2",
+		Type:       3,
+		InstanceId: "TEST",
 	}
 
 	if err := page.Validate(); err != nil {
-		t.Error("validating a valid page object failed:", page, err)
-	}
-}
+		t.Error("validating an invalid page object succeeded:", page)
 
-func TestPageValidWithAnonymousId(t *testing.T) {
-	page := Page{
-		AnonymousId: "2",
-	}
+	} else if e, ok := err.(FieldError); !ok {
+		t.Error("invalid error type returned when validating page:", err)
 
-	if err := page.Validate(); err != nil {
-		t.Error("validating a valid page object failed:", page, err)
+	} else if e != (FieldError{
+		Type:  "analytics.Page",
+		Name:  "DeploymentId",
+		Value: "",
+	}) {
+		t.Error("invalid error value returned when validating page:", err)
 	}
 }

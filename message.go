@@ -66,7 +66,6 @@ type batch struct {
 	MessageId string    `json:"messageId"`
 	SentAt    time.Time `json:"sentAt"`
 	Messages  []message `json:"batch"`
-	Context   *Context  `json:"context"`
 }
 
 type message struct {
@@ -127,6 +126,6 @@ func (q *messageQueue) flush() (msgs []message) {
 
 const (
 	// these are byte-based values (no power of 2 needed)
-	maxBatchBytes = 50 * 1000 * 1000
+	maxBatchBytes   = 50 * 1000 * 1000
 	maxMessageBytes = 32 * 1000
 )

@@ -4,20 +4,26 @@ import "time"
 
 var _ Message = (*Identify)(nil)
 
-// This type represents object sent in an identify call as described in
-// https://segment.com/docs/libraries/http/#identify
 type Identify struct {
 	// This field is exported for serialization purposes and shouldn't be set by
 	// the application, its value is always overwritten by the library.
-	Type string `json:"type,omitempty"`
+	Type           int    `json:"t"`
+	PayloadVersion int    `json:"v"`
+	Project        string `json:"p"`
 
-	MessageId    string       `json:"messageId,omitempty"`
-	AnonymousId  string       `json:"anonymousId,omitempty"`
-	UserId       string       `json:"userId,omitempty"`
-	Timestamp    time.Time    `json:"timestamp,omitempty"`
-	Context      *Context     `json:"context,omitempty"`
-	Traits       Traits       `json:"traits,omitempty"`
-	Integrations Integrations `json:"integrations,omitempty"`
+	Timestamp    time.Time `json:"ts"`
+	MessageId    string    `json:"mid"`
+	InstanceId   string    `json:"iid"`
+	DeploymentId string    `json:"did"`
+
+	DatabaseDialect  string  `json:"dbd,omitempty"`
+	ProductVersion   string  `json:"pv,omitempty"`
+	ProductBuild     string  `json:"pb,omitempty"`
+	UptimeDeployment float64 `json:"dup"`
+	UptimeInstance   float64 `json:"iup"`
+	IsDevelopment    bool    `json:"isd"`
+	IsOptOut         bool    `json:"iso"`
+	Startup          bool    `json:"s"`
 }
 
 func (msg Identify) internal() {
@@ -25,11 +31,19 @@ func (msg Identify) internal() {
 }
 
 func (msg Identify) Validate() error {
-	if len(msg.UserId) == 0 && len(msg.AnonymousId) == 0 {
+	if len(msg.InstanceId) == 0 {
 		return FieldError{
 			Type:  "analytics.Identify",
-			Name:  "UserId",
-			Value: msg.UserId,
+			Name:  "InstanceId",
+			Value: msg.InstanceId,
+		}
+	}
+
+	if len(msg.DeploymentId) == 0 {
+		return FieldError{
+			Type:  "analytics.Identify",
+			Name:  "DeploymentId",
+			Value: msg.DeploymentId,
 		}
 	}
 

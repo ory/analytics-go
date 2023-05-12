@@ -108,27 +108,12 @@ func makeHttpClient(transport http.RoundTripper) http.Client {
 
 func dereferenceMessage(msg Message) Message {
 	switch m := msg.(type) {
-	case *Alias:
-		if m == nil {
-			return nil
-		}
-		return *m
-	case *Group:
-		if m == nil {
-			return nil
-		}
-		return *m
 	case *Identify:
 		if m == nil {
 			return nil
 		}
 		return *m
 	case *Page:
-		if m == nil {
-			return nil
-		}
-		return *m
-	case *Screen:
 		if m == nil {
 			return nil
 		}
@@ -153,38 +138,23 @@ func (c *client) Enqueue(msg Message) (err error) {
 	var ts = c.now()
 
 	switch m := msg.(type) {
-	case Alias:
-		m.Type = "alias"
-		m.MessageId = makeMessageId(m.MessageId, id)
-		m.Timestamp = makeTimestamp(m.Timestamp, ts)
-		msg = m
-
-	case Group:
-		m.Type = "group"
-		m.MessageId = makeMessageId(m.MessageId, id)
-		m.Timestamp = makeTimestamp(m.Timestamp, ts)
-		msg = m
-
 	case Identify:
-		m.Type = "identify"
-		m.MessageId = makeMessageId(m.MessageId, id)
-		m.Timestamp = makeTimestamp(m.Timestamp, ts)
-		msg = m
-
-	case Page:
-		m.Type = "page"
-		m.MessageId = makeMessageId(m.MessageId, id)
-		m.Timestamp = makeTimestamp(m.Timestamp, ts)
-		msg = m
-
-	case Screen:
-		m.Type = "screen"
+		m.Type = 1
+		m.PayloadVersion = 1
 		m.MessageId = makeMessageId(m.MessageId, id)
 		m.Timestamp = makeTimestamp(m.Timestamp, ts)
 		msg = m
 
 	case Track:
-		m.Type = "track"
+		m.Type = 2
+		m.PayloadVersion = 1
+		m.MessageId = makeMessageId(m.MessageId, id)
+		m.Timestamp = makeTimestamp(m.Timestamp, ts)
+		msg = m
+
+	case Page:
+		m.Type = 3
+		m.PayloadVersion = 1
 		m.MessageId = makeMessageId(m.MessageId, id)
 		m.Timestamp = makeTimestamp(m.Timestamp, ts)
 		msg = m
@@ -252,7 +222,6 @@ func (c *client) send(msgs []message) {
 		MessageId: c.uid(),
 		SentAt:    c.now(),
 		Messages:  msgs,
-		Context:   c.DefaultContext,
 	}
 
 	var buf bytes.Buffer
@@ -435,7 +404,6 @@ func (c *client) maxBatchBytes() int {
 	b, _ := json.Marshal(batch{
 		MessageId: c.uid(),
 		SentAt:    c.now(),
-		Context:   c.DefaultContext,
 	})
 	return int(c.BatchMaxSize) - len(b)
 }

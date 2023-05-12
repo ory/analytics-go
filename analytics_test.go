@@ -189,13 +189,9 @@ func ExampleTrack() {
 	defer client.Close()
 
 	client.Enqueue(Track{
-		Event:  "Download",
-		UserId: "123456",
-		Properties: Properties{
-			"application": "Segment Desktop",
-			"version":     "1.1.0",
-			"platform":    "osx",
-		},
+		Type:         2,
+		InstanceId:   "123456",
+		DeploymentId: "qwerty",
 	})
 
 	fmt.Printf("%s\n", <-body)
@@ -243,12 +239,12 @@ func TestEnqueue(t *testing.T) {
 
 		"identify": {
 			fixture("test-enqueue-identify.json"),
-			Identify{UserId: "B"},
+			Identify{Type: 1, InstanceId: "A", DeploymentId: "B"},
 		},
 
 		"page": {
 			fixture("test-enqueue-page.json"),
-			Page{Name: "A", UserId: "B"},
+			Page{Type: 3, InstanceId: "A", DeploymentId: "B"},
 		},
 
 		"screen": {
@@ -259,13 +255,7 @@ func TestEnqueue(t *testing.T) {
 		"track": {
 			fixture("test-enqueue-track.json"),
 			Track{
-				Event:  "Download",
-				UserId: "123456",
-				Properties: Properties{
-					"application": "Segment Desktop",
-					"version":     "1.1.0",
-					"platform":    "osx",
-				},
+				Type: 2, InstanceId: "A", DeploymentId: "B",
 			},
 		},
 		"*alias": {
@@ -280,12 +270,12 @@ func TestEnqueue(t *testing.T) {
 
 		"*identify": {
 			fixture("test-enqueue-identify.json"),
-			&Identify{UserId: "B"},
+			&Identify{Type: 1, InstanceId: "A"},
 		},
 
 		"*page": {
 			fixture("test-enqueue-page.json"),
-			&Page{Name: "A", UserId: "B"},
+			&Page{Type: 3, InstanceId: "A", DeploymentId: "B"},
 		},
 
 		"*screen": {
@@ -296,13 +286,7 @@ func TestEnqueue(t *testing.T) {
 		"*track": {
 			fixture("test-enqueue-track.json"),
 			&Track{
-				Event:  "Download",
-				UserId: "123456",
-				Properties: Properties{
-					"application": "Segment Desktop",
-					"version":     "1.1.0",
-					"platform":    "osx",
-				},
+				Type: 2, InstanceId: "A", DeploymentId: "B",
 			},
 		},
 	}
@@ -373,13 +357,7 @@ func TestTrackWithInterval(t *testing.T) {
 	defer client.Close()
 
 	client.Enqueue(Track{
-		Event:  "Download",
-		UserId: "123456",
-		Properties: Properties{
-			"application": "Segment Desktop",
-			"version":     "1.1.0",
-			"platform":    "osx",
-		},
+		Type: 2, InstanceId: "A", DeploymentId: "B",
 	})
 
 	// Will flush in 100 milliseconds
@@ -409,13 +387,7 @@ func TestTrackWithTimestamp(t *testing.T) {
 	defer client.Close()
 
 	client.Enqueue(Track{
-		Event:  "Download",
-		UserId: "123456",
-		Properties: Properties{
-			"application": "Segment Desktop",
-			"version":     "1.1.0",
-			"platform":    "osx",
-		},
+		Type: 2, InstanceId: "A", DeploymentId: "B",
 		Timestamp: time.Date(2015, time.July, 10, 23, 0, 0, 0, time.UTC),
 	})
 
@@ -441,50 +413,8 @@ func TestTrackWithMessageId(t *testing.T) {
 	defer client.Close()
 
 	client.Enqueue(Track{
-		Event:  "Download",
-		UserId: "123456",
-		Properties: Properties{
-			"application": "Segment Desktop",
-			"version":     "1.1.0",
-			"platform":    "osx",
-		},
+		Type: 2, InstanceId: "A", DeploymentId: "B",
 		MessageId: "abc",
-	})
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
-	}
-}
-
-func TestTrackWithContext(t *testing.T) {
-	var ref = fixture("test-context-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Event:  "Download",
-		UserId: "123456",
-		Properties: Properties{
-			"application": "Segment Desktop",
-			"version":     "1.1.0",
-			"platform":    "osx",
-		},
-		Context: &Context{
-			Extra: map[string]interface{}{
-				"whatever": "here",
-			},
-		},
 	})
 
 	if res := string(<-body); ref != res {
@@ -509,51 +439,8 @@ func TestTrackMany(t *testing.T) {
 	defer client.Close()
 
 	for i := 0; i < 5; i++ {
-		client.Enqueue(Track{
-			Event:  "Download",
-			UserId: "123456",
-			Properties: Properties{
-				"application": "Segment Desktop",
-				"version":     i,
-			},
-		})
+		client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 	}
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
-	}
-}
-
-func TestTrackWithIntegrations(t *testing.T) {
-	var ref = fixture("test-integrations-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Event:  "Download",
-		UserId: "123456",
-		Properties: Properties{
-			"application": "Segment Desktop",
-			"version":     "1.1.0",
-			"platform":    "osx",
-		},
-		Integrations: Integrations{
-			"All":      true,
-			"Intercom": false,
-			"Mixpanel": true,
-		},
-	})
 
 	if res := string(<-body); ref != res {
 		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
@@ -571,7 +458,7 @@ func TestClientCloseTwice(t *testing.T) {
 		t.Error("closing a client a second time should return ErrClosed:", err)
 	}
 
-	if err := client.Enqueue(Track{UserId: "1", Event: "A"}); err != ErrClosed {
+	if err := client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"}); err != ErrClosed {
 		t.Error("using a client after it was closed should return ErrClosed:", err)
 	}
 }
@@ -617,74 +504,13 @@ func TestClientCallback(t *testing.T) {
 		Transport: testTransportOK,
 	})
 
-	client.Enqueue(Track{
-		UserId: "A",
-		Event:  "B",
-	})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 	client.Close()
 
 	select {
 	case <-reschan:
 	case err := <-errchan:
 		t.Error("failure callback triggered:", err)
-	}
-}
-
-func TestClientMarshalMessageError(t *testing.T) {
-	errchan := make(chan error, 1)
-
-	client, _ := NewWithConfig("0123456789", Config{
-		Logger: testLogger{t.Logf, t.Logf},
-		Callback: testCallback{
-			nil,
-			func(m Message, e error) { errchan <- e },
-		},
-		Transport: testTransportOK,
-	})
-
-	// Functions cannot be serializable, this should break the JSON marshaling
-	// and trigger the failure callback.
-	client.Enqueue(Track{
-		UserId:     "A",
-		Event:      "B",
-		Properties: Properties{"invalid": func() {}},
-	})
-	client.Close()
-
-	if err := <-errchan; err == nil {
-		t.Error("failure callback not triggered for unserializable message")
-
-	} else if _, ok := err.(*json.UnsupportedTypeError); !ok {
-		t.Errorf("invalid error type returned by unserializable message: %T", err)
-	}
-}
-
-func TestClientMarshalContextError(t *testing.T) {
-	errchan := make(chan error, 1)
-
-	client, _ := NewWithConfig("0123456789", Config{
-		Logger: testLogger{t.Logf, t.Logf},
-		Callback: testCallback{
-			nil,
-			func(m Message, e error) { errchan <- e },
-		},
-		DefaultContext: &Context{
-			// The context set on the batch message is invalid this should also
-			// cause the batched message to fail to be serialized and call the
-			// failure callback.
-			Extra: map[string]interface{}{"invalid": func() {}},
-		},
-		Transport: testTransportOK,
-	})
-
-	client.Enqueue(Track{UserId: "A", Event: "B"})
-	client.Close()
-
-	if err := <-errchan; err == nil {
-		t.Error("failure callback not triggered for unserializable context")
-
-	} else if _, ok := err.(*json.MarshalerError); !ok {
-		t.Errorf("invalid error type returned by unserializable context: %T", err)
 	}
 }
 
@@ -701,7 +527,7 @@ func TestClientNewRequestError(t *testing.T) {
 		Transport: testTransportOK,
 	})
 
-	client.Enqueue(Track{UserId: "A", Event: "B"})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 	client.Close()
 
 	if err := <-errchan; err == nil {
@@ -721,7 +547,7 @@ func TestClientRoundTripperError(t *testing.T) {
 		Transport: testTransportError,
 	})
 
-	client.Enqueue(Track{UserId: "A", Event: "B"})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 	client.Close()
 
 	if err := <-errchan; err == nil {
@@ -751,7 +577,7 @@ func TestClientRetryError(t *testing.T) {
 		RetryAfter: func(i int) time.Duration { return time.Millisecond },
 	})
 
-	client.Enqueue(Track{UserId: "A", Event: "B"})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 
 	// Each retry should happen ~1 millisecond, this should give enough time to
 	// the test to trigger the failure callback.
@@ -783,7 +609,7 @@ func TestClientResponse400(t *testing.T) {
 		Transport: testTransportBadRequest,
 	})
 
-	client.Enqueue(Track{UserId: "A", Event: "B"})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 	client.Close()
 
 	if err := <-errchan; err == nil {
@@ -804,7 +630,7 @@ func TestClientResponseBodyError(t *testing.T) {
 		Transport: testTransportBodyError,
 	})
 
-	client.Enqueue(Track{UserId: "A", Event: "B"})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 	client.Close()
 
 	if err := <-errchan; err == nil {
@@ -832,8 +658,8 @@ func TestClientMaxConcurrentRequests(t *testing.T) {
 		maxConcurrentRequests: 1,
 	})
 
-	client.Enqueue(Track{UserId: "A", Event: "B"})
-	client.Enqueue(Track{UserId: "A", Event: "B"})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
+	client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
 	client.Close()
 
 	if _, ok := <-reschan; !ok {

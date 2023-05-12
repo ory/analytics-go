@@ -2,7 +2,19 @@ package analytics
 
 import "testing"
 
-func TestIdentifyMissingUserId(t *testing.T) {
+func TestIdentifyValid(t *testing.T) {
+	page := Identify{
+		Type:         1,
+		DeploymentId: "TEST",
+		InstanceId:   "TEST",
+	}
+
+	if err := page.Validate(); err == nil {
+		t.Error("validating a valid identify object failed:", page, err)
+	}
+}
+
+func TestIdentifyInvalidType(t *testing.T) {
 	identify := Identify{}
 
 	if err := identify.Validate(); err == nil {
@@ -13,29 +25,51 @@ func TestIdentifyMissingUserId(t *testing.T) {
 
 	} else if e != (FieldError{
 		Type:  "analytics.Identify",
-		Name:  "UserId",
+		Name:  "Type",
+		Value: 0,
+	}) {
+		t.Error("invalid error value returned when validating identify:", err)
+	}
+}
+
+func TestIdentifyMissingInstanceId(t *testing.T) {
+	identify := Identify{
+		Type:         1,
+		DeploymentId: "TEST",
+	}
+
+	if err := identify.Validate(); err != nil {
+		t.Error("validating a valid identify object failed:", identify, err)
+
+	} else if e, ok := err.(FieldError); !ok {
+		t.Error("invalid error type returned when validating identify:", err)
+
+	} else if e != (FieldError{
+		Type:  "analytics.Identify",
+		Name:  "InstanceId",
 		Value: "",
 	}) {
 		t.Error("invalid error value returned when validating identify:", err)
 	}
 }
 
-func TestIdentifyValidWithUserId(t *testing.T) {
+func TestIdentifyMissingDeploymentId(t *testing.T) {
 	identify := Identify{
-		UserId: "2",
+		Type:       1,
+		InstanceId: "TEST",
 	}
 
 	if err := identify.Validate(); err != nil {
 		t.Error("validating a valid identify object failed:", identify, err)
-	}
-}
 
-func TestIdentifyValidWithAnonymousId(t *testing.T) {
-	identify := Identify{
-		AnonymousId: "2",
-	}
+	} else if e, ok := err.(FieldError); !ok {
+		t.Error("invalid error type returned when validating identify:", err)
 
-	if err := identify.Validate(); err != nil {
-		t.Error("validating a valid identify object failed:", identify, err)
+	} else if e != (FieldError{
+		Type:  "analytics.Identify",
+		Name:  "DeploymentId",
+		Value: "",
+	}) {
+		t.Error("invalid error value returned when validating identify:", err)
 	}
 }
