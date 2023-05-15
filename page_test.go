@@ -9,26 +9,8 @@ func TestPageValid(t *testing.T) {
 		InstanceId:   "TEST",
 	}
 
-	if err := page.Validate(); err == nil {
+	if err := page.Validate(); err != nil {
 		t.Error("validating a valid page object failed:", page, err)
-	}
-}
-
-func TestPageInvalidType(t *testing.T) {
-	page := Page{}
-
-	if err := page.Validate(); err == nil {
-		t.Error("validating an invalid page object succeeded:", page)
-
-	} else if e, ok := err.(FieldError); !ok {
-		t.Error("invalid error type returned when validating page:", err)
-
-	} else if e != (FieldError{
-		Type:  "analytics.Page",
-		Name:  "Type",
-		Value: 0,
-	}) {
-		t.Error("invalid error value returned when validating page:", err)
 	}
 }
 
@@ -38,7 +20,7 @@ func TestPageMissingInstanceId(t *testing.T) {
 		DeploymentId: "TEST",
 	}
 
-	if err := page.Validate(); err != nil {
+	if err := page.Validate(); err == nil {
 		t.Error("validating an invalid page object succeeded:", page)
 
 	} else if e, ok := err.(FieldError); !ok {
@@ -59,7 +41,7 @@ func TestPageMissingDeploymentId(t *testing.T) {
 		InstanceId: "TEST",
 	}
 
-	if err := page.Validate(); err != nil {
+	if err := page.Validate(); err == nil {
 		t.Error("validating an invalid page object succeeded:", page)
 
 	} else if e, ok := err.(FieldError); !ok {

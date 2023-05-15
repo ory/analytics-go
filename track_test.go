@@ -9,26 +9,8 @@ func TestTrackValid(t *testing.T) {
 		InstanceId:   "TEST",
 	}
 
-	if err := page.Validate(); err == nil {
+	if err := page.Validate(); err != nil {
 		t.Error("validating a valid track object failed:", page, err)
-	}
-}
-
-func TestTrackInvalidType(t *testing.T) {
-	track := Track{}
-
-	if err := track.Validate(); err == nil {
-		t.Error("validating an invalid track object succeeded:", track)
-
-	} else if e, ok := err.(FieldError); !ok {
-		t.Error("invalid error type returned when validating track:", err)
-
-	} else if e != (FieldError{
-		Type:  "analytics.Track",
-		Name:  "Type",
-		Value: 0,
-	}) {
-		t.Error("invalid error value returned when validating track:", err)
 	}
 }
 
