@@ -17,6 +17,16 @@ import (
 const Version = "3.0.0"
 const unimplementedError = "not implemented"
 
+// PayloadVersion that identifies how these payloads should be parsed when analyzing.
+// When something changes in the payloads sent document here the changes, increase the payload version and handle analyzer.
+// V1: Initial version
+const PayloadVersion = 1
+
+// TypeIdentify Type, TypeTrack Type, TypePage Type constants to identify payload type
+const TypeIdentify = 1
+const TypeTrack = 2
+const TypePage = 3
+
 // This interface is the main API exposed by the analytics package.
 // Values that satsify this interface are returned by the client constructors
 // provided by the package and provide a way to send messages via the HTTP API.
@@ -139,22 +149,22 @@ func (c *client) Enqueue(msg Message) (err error) {
 
 	switch m := msg.(type) {
 	case Identify:
-		m.Type = 1
-		m.PayloadVersion = 1
+		m.Type = TypeIdentify
+		m.PayloadVersion = PayloadVersion
 		m.MessageId = makeMessageId(m.MessageId, id)
 		m.Timestamp = makeTimestamp(m.Timestamp, ts)
 		msg = m
 
 	case Track:
-		m.Type = 2
-		m.PayloadVersion = 1
+		m.Type = TypeTrack
+		m.PayloadVersion = PayloadVersion
 		m.MessageId = makeMessageId(m.MessageId, id)
 		m.Timestamp = makeTimestamp(m.Timestamp, ts)
 		msg = m
 
 	case Page:
-		m.Type = 3
-		m.PayloadVersion = 1
+		m.Type = TypePage
+		m.PayloadVersion = PayloadVersion
 		m.MessageId = makeMessageId(m.MessageId, id)
 		m.Timestamp = makeTimestamp(m.Timestamp, ts)
 		msg = m
