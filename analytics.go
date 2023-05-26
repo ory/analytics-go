@@ -152,21 +152,21 @@ func (c *client) Enqueue(msg Message) (err error) {
 		m.Type = TypeIdentify
 		m.PayloadVersion = PayloadVersion
 		m.MessageId = makeMessageId(m.MessageId, id)
-		m.Timestamp = makeTimestamp(m.Timestamp, ts)
+		m.Timestamp = ts
 		msg = m
 
 	case Track:
 		m.Type = TypeTrack
 		m.PayloadVersion = PayloadVersion
 		m.MessageId = makeMessageId(m.MessageId, id)
-		m.Timestamp = makeTimestamp(m.Timestamp, ts)
+		m.Timestamp = ts
 		msg = m
 
 	case Page:
 		m.Type = TypePage
 		m.PayloadVersion = PayloadVersion
 		m.MessageId = makeMessageId(m.MessageId, id)
-		m.Timestamp = makeTimestamp(m.Timestamp, ts)
+		m.Timestamp = ts
 		msg = m
 
 	default:

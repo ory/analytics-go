@@ -157,7 +157,7 @@ func makeConfig(c Config) Config {
 	}
 
 	if c.now == nil {
-		c.now = time.Now
+		c.now = func() time.Time { return time.Now().UTC().Truncate(time.Second) }
 	}
 
 	if c.maxConcurrentRequests == 0 {
