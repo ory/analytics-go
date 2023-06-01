@@ -16,11 +16,11 @@ type Page struct {
 	InstanceId   string    `json:"iid"`
 	DeploymentId string    `json:"did"`
 
-	UrlHost        string  `json:"uh"`
-	UrlPath        string  `json:"up"`
-	UrlScheme      int     `json:"us,omitempty"`
-	RequestCode    int     `json:"rc"`
-	RequestLatency float64 `json:"rl"`
+	UrlHost        string `json:"uh"`
+	UrlPath        string `json:"up"`
+	UrlScheme      int    `json:"us,omitempty"`
+	RequestCode    int    `json:"rc"`
+	RequestLatency int    `json:"rl"`
 }
 
 func (msg Page) internal() {
