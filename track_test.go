@@ -3,14 +3,14 @@ package analytics
 import "testing"
 
 func TestTrackValid(t *testing.T) {
-	page := Identify{
+	track := Track{
 		Type:         2,
 		DeploymentId: "TEST",
 		InstanceId:   "TEST",
 	}
 
-	if err := page.Validate(); err != nil {
-		t.Error("validating a valid track object failed:", page, err)
+	if err := track.Validate(); err != nil {
+		t.Error("validating a valid track object failed:", track, err)
 	}
 }
 

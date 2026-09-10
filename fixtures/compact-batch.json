@@ -1,0 +1,26 @@
+{
+  "messageId": "fixture-batch",
+  "sentAt": "2026-08-03T12:00:00Z",
+  "batch": [
+    {
+      "t": 1, "v": 1, "p": "talos", "ts": "2026-08-03T12:00:00Z",
+      "mid": "identify-id", "iid": "instance-id", "did": "deployment-id",
+      "dbd": "sqlite", "pv": "v1.2.3", "dup": 0, "iup": 0,
+      "isd": false, "iso": false, "s": true
+    },
+    {
+      "t": 2, "v": 1, "p": "talos", "ts": "2026-08-03T12:00:00Z",
+      "mid": "track-id", "iid": "instance-id", "did": "deployment-id",
+      "osn": "linux", "osa": "amd64", "cpu": 2,
+      "alloc": 0, "totalAlloc": 0, "sys": 0, "lookups": 0,
+      "mallocs": 0, "frees": 0, "heapAlloc": 0, "heapSys": 0,
+      "heapIdle": 0, "heapInuse": 0, "heapReleased": 0,
+      "heapObjects": 0, "numGC": 0
+    },
+    {
+      "t": 3, "v": 1, "p": "talos", "ts": "2026-08-03T12:00:00Z",
+      "mid": "page-id", "iid": "instance-id", "did": "deployment-id",
+      "uh": "example.com", "up": "/api", "rc": 201, "rl": 12
+    }
+  ]
+}

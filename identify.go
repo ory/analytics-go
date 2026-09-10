@@ -10,6 +10,8 @@ type Identify struct {
 	Type           int    `json:"t"`
 	PayloadVersion int    `json:"v"`
 	Project        string `json:"p"`
+	// Edition identifies the shipped distribution, independent of license validity.
+	Edition string `json:"ed,omitempty"`
 
 	Timestamp    time.Time `json:"ts"`
 	MessageId    string    `json:"mid"`

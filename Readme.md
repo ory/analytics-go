@@ -50,6 +50,20 @@ func main() {
 }
 ```
 
+## Compact SQA edition metadata
+
+`Identify`, `Track` and `Page` accept an optional `Edition` string, serialized as
+`ed`. Go services can set `oss`, `oel` or `network` from their build distribution;
+this value does not describe license validity. Keep `Project` unchanged across
+editions. Empty edition is omitted, preserving existing payloads. Receivers
+should treat missing and unrecognized editions as `unknown`.
+
+`fixtures/compact-batch.json` and `TestEditionBatchProtocol` document the compact
+batch envelope and test plain/gzip delivery with Basic authentication. The client
+assigns event timestamps at enqueue time. Transport retries reuse the serialized
+batch, including timestamps, message IDs and edition; this is not an exactly-once
+delivery guarantee.
+
 ## License
 
 The library is released under the [MIT license](License.md).

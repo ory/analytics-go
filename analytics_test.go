@@ -199,120 +199,83 @@ func ExampleTrack() {
 	// {
 	//   "batch": [
 	//     {
-	//       "event": "Download",
-	//       "messageId": "I'm unique",
-	//       "properties": {
-	//         "application": "Segment Desktop",
-	//         "platform": "osx",
-	//         "version": "1.1.0"
-	//       },
-	//       "timestamp": "2009-11-10T23:00:00Z",
-	//       "type": "track",
-	//       "userId": "123456"
+	//       "alloc": 0,
+	//       "did": "qwerty",
+	//       "frees": 0,
+	//       "heapAlloc": 0,
+	//       "heapIdle": 0,
+	//       "heapInuse": 0,
+	//       "heapObjects": 0,
+	//       "heapReleased": 0,
+	//       "heapSys": 0,
+	//       "iid": "123456",
+	//       "lookups": 0,
+	//       "mallocs": 0,
+	//       "mid": "I'm unique",
+	//       "numGC": 0,
+	//       "p": "",
+	//       "sys": 0,
+	//       "t": 2,
+	//       "totalAlloc": 0,
+	//       "ts": "2009-11-10T23:00:00Z",
+	//       "v": 1
 	//     }
 	//   ],
-	//   "context": {
-	//     "library": {
-	//       "name": "analytics-go",
-	//       "version": "3.0.0"
-	//     }
-	//   },
 	//   "messageId": "I'm unique",
 	//   "sentAt": "2009-11-10T23:00:00Z"
 	// }
 }
 
 func TestEnqueue(t *testing.T) {
-	tests := map[string]struct {
-		ref string
-		msg Message
+	tests := []struct {
+		name    string
+		msg     Message
+		fixture string
 	}{
-		"alias": {
-			fixture("test-enqueue-alias.json"),
-			Alias{PreviousId: "A", UserId: "B"},
-		},
-
-		"group": {
-			fixture("test-enqueue-group.json"),
-			Group{GroupId: "A", UserId: "B"},
-		},
-
-		"identify": {
-			fixture("test-enqueue-identify.json"),
-			Identify{Type: 1, InstanceId: "A", DeploymentId: "B"},
-		},
-
-		"page": {
-			fixture("test-enqueue-page.json"),
-			Page{Type: 3, InstanceId: "A", DeploymentId: "B"},
-		},
-
-		"screen": {
-			fixture("test-enqueue-screen.json"),
-			Screen{Name: "A", UserId: "B"},
-		},
-
-		"track": {
-			fixture("test-enqueue-track.json"),
-			Track{
-				Type: 2, InstanceId: "A", DeploymentId: "B",
-			},
-		},
-		"*alias": {
-			fixture("test-enqueue-alias.json"),
-			&Alias{PreviousId: "A", UserId: "B"},
-		},
-
-		"*group": {
-			fixture("test-enqueue-group.json"),
-			&Group{GroupId: "A", UserId: "B"},
-		},
-
-		"*identify": {
-			fixture("test-enqueue-identify.json"),
-			&Identify{Type: 1, InstanceId: "A"},
-		},
-
-		"*page": {
-			fixture("test-enqueue-page.json"),
-			&Page{Type: 3, InstanceId: "A", DeploymentId: "B"},
-		},
-
-		"*screen": {
-			fixture("test-enqueue-screen.json"),
-			&Screen{Name: "A", UserId: "B"},
-		},
-
-		"*track": {
-			fixture("test-enqueue-track.json"),
-			&Track{
-				Type: 2, InstanceId: "A", DeploymentId: "B",
-			},
-		},
+		{"identify", Identify{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-identify.json"},
+		{"*identify", &Identify{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-identify.json"},
+		{"track", Track{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-track.json"},
+		{"*track", &Track{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-track.json"},
+		{"page", Page{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-page.json"},
+		{"*page", &Page{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-page.json"},
+		{"alias", Alias{PreviousId: "A", UserId: "B"}, ""},
+		{"*alias", &Alias{PreviousId: "A", UserId: "B"}, ""},
+		{"group", Group{GroupId: "A", UserId: "B"}, ""},
+		{"*group", &Group{GroupId: "A", UserId: "B"}, ""},
+		{"screen", Screen{Name: "A", UserId: "B"}, ""},
+		{"*screen", &Screen{Name: "A", UserId: "B"}, ""},
 	}
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	for name, test := range tests {
-		if err := client.Enqueue(test.msg); err != nil {
-			t.Error(err)
-			return
-		}
-
-		if res := string(<-body); res != test.ref {
-			t.Errorf("%s: invalid response:\n- expected %s\n- received: %s", name, test.ref, res)
-		}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body, server := mockServer()
+			defer server.Close()
+			client, err := NewWithConfig("local-fixture-key", Config{
+				Endpoint: server.URL, Transport: server.Client().Transport, BatchSize: 1, now: mockTime, uid: mockId,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.Close()
+			err = client.Enqueue(test.msg)
+			if test.fixture == "" {
+				want := fmt.Sprintf("messages with custom types cannot be enqueued: %T", test.msg)
+				if err == nil || err.Error() != want {
+					t.Fatalf("unsupported message: got %v, want %s", err, want)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case res := <-body:
+				if want := fixture(test.fixture); string(res) != want {
+					t.Errorf("compact batch: got %s, want %s", res, want)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("batch was not delivered")
+			}
+		})
 	}
 }
 
@@ -370,7 +333,7 @@ func TestTrackWithInterval(t *testing.T) {
 	}
 }
 
-func TestTrackWithTimestamp(t *testing.T) {
+func TestTrackTimestampUsesEnqueueTime(t *testing.T) {
 	var ref = fixture("test-timestamp-track.json")
 
 	body, server := mockServer()
