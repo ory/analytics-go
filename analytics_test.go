@@ -300,113 +300,79 @@ func TestEnqueuingCustomTypeFails(t *testing.T) {
 	}
 }
 
-func TestTrackWithInterval(t *testing.T) {
-	const interval = 100 * time.Millisecond
-	var ref = fixture("test-interval-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	t0 := time.Now()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint: server.URL,
-		Interval: interval,
-		Verbose:  true,
-		Logger:   t,
-		now:      mockTime,
-		uid:      mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Type: 2, InstanceId: "A", DeploymentId: "B",
-	})
-
-	// Will flush in 100 milliseconds
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
+// trackBatchFixture varies only the fields relevant to each batching test,
+// keeping the complete wire-format expectation in one independent JSON fixture.
+func trackBatchFixture(t *testing.T, count int, messageID string) string {
+	t.Helper()
+	var want map[string]interface{}
+	if err := json.Unmarshal([]byte(fixture("test-enqueue-track.json")), &want); err != nil {
+		t.Fatal(err)
 	}
-
-	if t1 := time.Now(); t1.Sub(t0) < interval {
-		t.Error("the flushing interval is too short:", interval)
+	event := want["batch"].([]interface{})[0].(map[string]interface{})
+	if messageID != "" {
+		event["mid"] = messageID
 	}
+	events := make([]interface{}, count)
+	for i := range events {
+		events[i] = event
+	}
+	want["batch"] = events
+	encoded, err := json.MarshalIndent(want, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(encoded)
 }
 
-func TestTrackTimestampUsesEnqueueTime(t *testing.T) {
-	var ref = fixture("test-timestamp-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Type: 2, InstanceId: "A", DeploymentId: "B",
-		Timestamp: time.Date(2015, time.July, 10, 23, 0, 0, 0, time.UTC),
-	})
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
-	}
-}
-
-func TestTrackWithMessageId(t *testing.T) {
-	var ref = fixture("test-messageid-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Type: 2, InstanceId: "A", DeploymentId: "B",
-		MessageId: "abc",
-	})
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
-	}
-}
-
-func TestTrackMany(t *testing.T) {
-	var ref = fixture("test-many-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 3,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	for i := 0; i < 5; i++ {
-		client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
-	}
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
+func TestTrackBatching(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		interval  time.Duration
+		batchSize int
+		count     int
+		messageID string
+		timestamp time.Time
+	}{
+		{name: "interval", interval: 100 * time.Millisecond, batchSize: 100, count: 1},
+		{name: "timestamp uses enqueue time", batchSize: 1, count: 1, timestamp: time.Date(2015, time.July, 10, 23, 0, 0, 0, time.UTC)},
+		{name: "explicit message ID", batchSize: 1, count: 1, messageID: "abc"},
+		{name: "batch size", batchSize: 3, count: 5},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			body, server := mockServer()
+			defer server.Close()
+			started := time.Now()
+			client, err := NewWithConfig("local-fixture-key", Config{
+				Endpoint: server.URL, Transport: server.Client().Transport,
+				Interval: test.interval, BatchSize: test.batchSize, now: mockTime, uid: mockId,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.Close()
+			for i := 0; i < test.count; i++ {
+				if err := client.Enqueue(Track{
+					InstanceId: "A", DeploymentId: "B", MessageId: test.messageID, Timestamp: test.timestamp,
+				}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			count := test.count
+			if count > test.batchSize {
+				count = test.batchSize
+			}
+			select {
+			case got := <-body:
+				if want := trackBatchFixture(t, count, test.messageID); string(got) != want {
+					t.Errorf("compact batch: got %s, want %s", got, want)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("batch was not delivered")
+			}
+			if time.Since(started) < test.interval {
+				t.Error("batch flushed before the configured interval")
+			}
+		})
 	}
 }
 

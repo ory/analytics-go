@@ -91,12 +91,8 @@ func TestEditionBatchProtocol(t *testing.T) {
 					}
 					delete(fields, "ed")
 				}
-				baseline, err := ioutil.ReadFile("fixtures/compact-batch.json")
-				if err != nil {
-					t.Fatal(err)
-				}
 				var expected map[string]interface{}
-				if err := json.Unmarshal(baseline, &expected); err != nil {
+				if err := json.Unmarshal([]byte(fixture("compact-batch.json")), &expected); err != nil {
 					t.Fatal(err)
 				}
 				if !reflect.DeepEqual(actual, expected) {
