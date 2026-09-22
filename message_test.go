@@ -82,7 +82,7 @@ func TestMakeMessage(t *testing.T) {
 
 	} else if !reflect.DeepEqual(msg, message{
 		msg:  track,
-		json: []byte(`{"userId":"1","event":"","timestamp":"0001-01-01T00:00:00Z"}`),
+		json: []byte(`{"t":0,"v":0,"p":"","ts":"0001-01-01T00:00:00Z","mid":"","iid":"A","did":"B","alloc":0,"totalAlloc":0,"sys":0,"lookups":0,"mallocs":0,"frees":0,"heapAlloc":0,"heapSys":0,"heapIdle":0,"heapInuse":0,"heapReleased":0,"heapObjects":0,"numGC":0}`),
 	}) {
 		t.Error("invalid message generated from track message:", msg.msg, string(msg.json))
 	}

@@ -199,120 +199,83 @@ func ExampleTrack() {
 	// {
 	//   "batch": [
 	//     {
-	//       "event": "Download",
-	//       "messageId": "I'm unique",
-	//       "properties": {
-	//         "application": "Segment Desktop",
-	//         "platform": "osx",
-	//         "version": "1.1.0"
-	//       },
-	//       "timestamp": "2009-11-10T23:00:00Z",
-	//       "type": "track",
-	//       "userId": "123456"
+	//       "alloc": 0,
+	//       "did": "qwerty",
+	//       "frees": 0,
+	//       "heapAlloc": 0,
+	//       "heapIdle": 0,
+	//       "heapInuse": 0,
+	//       "heapObjects": 0,
+	//       "heapReleased": 0,
+	//       "heapSys": 0,
+	//       "iid": "123456",
+	//       "lookups": 0,
+	//       "mallocs": 0,
+	//       "mid": "I'm unique",
+	//       "numGC": 0,
+	//       "p": "",
+	//       "sys": 0,
+	//       "t": 2,
+	//       "totalAlloc": 0,
+	//       "ts": "2009-11-10T23:00:00Z",
+	//       "v": 1
 	//     }
 	//   ],
-	//   "context": {
-	//     "library": {
-	//       "name": "analytics-go",
-	//       "version": "3.0.0"
-	//     }
-	//   },
 	//   "messageId": "I'm unique",
 	//   "sentAt": "2009-11-10T23:00:00Z"
 	// }
 }
 
 func TestEnqueue(t *testing.T) {
-	tests := map[string]struct {
-		ref string
-		msg Message
+	tests := []struct {
+		name    string
+		msg     Message
+		fixture string
 	}{
-		"alias": {
-			fixture("test-enqueue-alias.json"),
-			Alias{PreviousId: "A", UserId: "B"},
-		},
-
-		"group": {
-			fixture("test-enqueue-group.json"),
-			Group{GroupId: "A", UserId: "B"},
-		},
-
-		"identify": {
-			fixture("test-enqueue-identify.json"),
-			Identify{Type: 1, InstanceId: "A", DeploymentId: "B"},
-		},
-
-		"page": {
-			fixture("test-enqueue-page.json"),
-			Page{Type: 3, InstanceId: "A", DeploymentId: "B"},
-		},
-
-		"screen": {
-			fixture("test-enqueue-screen.json"),
-			Screen{Name: "A", UserId: "B"},
-		},
-
-		"track": {
-			fixture("test-enqueue-track.json"),
-			Track{
-				Type: 2, InstanceId: "A", DeploymentId: "B",
-			},
-		},
-		"*alias": {
-			fixture("test-enqueue-alias.json"),
-			&Alias{PreviousId: "A", UserId: "B"},
-		},
-
-		"*group": {
-			fixture("test-enqueue-group.json"),
-			&Group{GroupId: "A", UserId: "B"},
-		},
-
-		"*identify": {
-			fixture("test-enqueue-identify.json"),
-			&Identify{Type: 1, InstanceId: "A"},
-		},
-
-		"*page": {
-			fixture("test-enqueue-page.json"),
-			&Page{Type: 3, InstanceId: "A", DeploymentId: "B"},
-		},
-
-		"*screen": {
-			fixture("test-enqueue-screen.json"),
-			&Screen{Name: "A", UserId: "B"},
-		},
-
-		"*track": {
-			fixture("test-enqueue-track.json"),
-			&Track{
-				Type: 2, InstanceId: "A", DeploymentId: "B",
-			},
-		},
+		{"identify", Identify{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-identify.json"},
+		{"*identify", &Identify{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-identify.json"},
+		{"track", Track{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-track.json"},
+		{"*track", &Track{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-track.json"},
+		{"page", Page{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-page.json"},
+		{"*page", &Page{InstanceId: "A", DeploymentId: "B"}, "test-enqueue-page.json"},
+		{"alias", Alias{PreviousId: "A", UserId: "B"}, ""},
+		{"*alias", &Alias{PreviousId: "A", UserId: "B"}, ""},
+		{"group", Group{GroupId: "A", UserId: "B"}, ""},
+		{"*group", &Group{GroupId: "A", UserId: "B"}, ""},
+		{"screen", Screen{Name: "A", UserId: "B"}, ""},
+		{"*screen", &Screen{Name: "A", UserId: "B"}, ""},
 	}
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	for name, test := range tests {
-		if err := client.Enqueue(test.msg); err != nil {
-			t.Error(err)
-			return
-		}
-
-		if res := string(<-body); res != test.ref {
-			t.Errorf("%s: invalid response:\n- expected %s\n- received: %s", name, test.ref, res)
-		}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body, server := mockServer()
+			defer server.Close()
+			client, err := NewWithConfig("local-fixture-key", Config{
+				Endpoint: server.URL, Transport: server.Client().Transport, BatchSize: 1, now: mockTime, uid: mockId,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.Close()
+			err = client.Enqueue(test.msg)
+			if test.fixture == "" {
+				want := fmt.Sprintf("messages with custom types cannot be enqueued: %T", test.msg)
+				if err == nil || err.Error() != want {
+					t.Fatalf("unsupported message: got %v, want %s", err, want)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			select {
+			case res := <-body:
+				if want := fixture(test.fixture); string(res) != want {
+					t.Errorf("compact batch: got %s, want %s", res, want)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("batch was not delivered")
+			}
+		})
 	}
 }
 
@@ -337,113 +300,79 @@ func TestEnqueuingCustomTypeFails(t *testing.T) {
 	}
 }
 
-func TestTrackWithInterval(t *testing.T) {
-	const interval = 100 * time.Millisecond
-	var ref = fixture("test-interval-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	t0 := time.Now()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint: server.URL,
-		Interval: interval,
-		Verbose:  true,
-		Logger:   t,
-		now:      mockTime,
-		uid:      mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Type: 2, InstanceId: "A", DeploymentId: "B",
-	})
-
-	// Will flush in 100 milliseconds
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
+// trackBatchFixture varies only the fields relevant to each batching test,
+// keeping the complete wire-format expectation in one independent JSON fixture.
+func trackBatchFixture(t *testing.T, count int, messageID string) string {
+	t.Helper()
+	var want map[string]interface{}
+	if err := json.Unmarshal([]byte(fixture("test-enqueue-track.json")), &want); err != nil {
+		t.Fatal(err)
 	}
-
-	if t1 := time.Now(); t1.Sub(t0) < interval {
-		t.Error("the flushing interval is too short:", interval)
+	event := want["batch"].([]interface{})[0].(map[string]interface{})
+	if messageID != "" {
+		event["mid"] = messageID
 	}
+	events := make([]interface{}, count)
+	for i := range events {
+		events[i] = event
+	}
+	want["batch"] = events
+	encoded, err := json.MarshalIndent(want, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(encoded)
 }
 
-func TestTrackWithTimestamp(t *testing.T) {
-	var ref = fixture("test-timestamp-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Type: 2, InstanceId: "A", DeploymentId: "B",
-		Timestamp: time.Date(2015, time.July, 10, 23, 0, 0, 0, time.UTC),
-	})
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
-	}
-}
-
-func TestTrackWithMessageId(t *testing.T) {
-	var ref = fixture("test-messageid-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 1,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	client.Enqueue(Track{
-		Type: 2, InstanceId: "A", DeploymentId: "B",
-		MessageId: "abc",
-	})
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
-	}
-}
-
-func TestTrackMany(t *testing.T) {
-	var ref = fixture("test-many-track.json")
-
-	body, server := mockServer()
-	defer server.Close()
-
-	client, _ := NewWithConfig("h97jamjwbh", Config{
-		Endpoint:  server.URL,
-		Verbose:   true,
-		Logger:    t,
-		BatchSize: 3,
-		now:       mockTime,
-		uid:       mockId,
-	})
-	defer client.Close()
-
-	for i := 0; i < 5; i++ {
-		client.Enqueue(Track{Type: 2, InstanceId: "A", DeploymentId: "B"})
-	}
-
-	if res := string(<-body); ref != res {
-		t.Errorf("invalid response:\n- expected %s\n- received: %s", ref, res)
+func TestTrackBatching(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		interval  time.Duration
+		batchSize int
+		count     int
+		messageID string
+		timestamp time.Time
+	}{
+		{name: "interval", interval: 100 * time.Millisecond, batchSize: 100, count: 1},
+		{name: "timestamp uses enqueue time", batchSize: 1, count: 1, timestamp: time.Date(2015, time.July, 10, 23, 0, 0, 0, time.UTC)},
+		{name: "explicit message ID", batchSize: 1, count: 1, messageID: "abc"},
+		{name: "batch size", batchSize: 3, count: 5},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			body, server := mockServer()
+			defer server.Close()
+			started := time.Now()
+			client, err := NewWithConfig("local-fixture-key", Config{
+				Endpoint: server.URL, Transport: server.Client().Transport,
+				Interval: test.interval, BatchSize: test.batchSize, now: mockTime, uid: mockId,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer client.Close()
+			for i := 0; i < test.count; i++ {
+				if err := client.Enqueue(Track{
+					InstanceId: "A", DeploymentId: "B", MessageId: test.messageID, Timestamp: test.timestamp,
+				}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			count := test.count
+			if count > test.batchSize {
+				count = test.batchSize
+			}
+			select {
+			case got := <-body:
+				if want := trackBatchFixture(t, count, test.messageID); string(got) != want {
+					t.Errorf("compact batch: got %s, want %s", got, want)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("batch was not delivered")
+			}
+			if time.Since(started) < test.interval {
+				t.Error("batch flushed before the configured interval")
+			}
+		})
 	}
 }
 
